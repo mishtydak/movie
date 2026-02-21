@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Movie Watchlist App</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    input, button { padding: 8px; margin: 5px; }
+    .movie { border: 1px solid #ccc; padding: 10px; margin: 10px 0; }
+    img { height: 120px; }
+  </style>
+</head>
+<body>
+
+<h1>Movie Search</h1>
+
+<input type="text" id="searchInput" placeholder="Search movie..." />
+<button onclick="searchMovies()">Search</button>
+
+<div id="results"></div>
+
+<hr>
+
+<h2>User Watchlist</h2>
+<button onclick="getWatchlist()">Load Watchlist</button>
+<div id="watchlist"></div>
+
+<script>
+const BASE_URL = "http://localhost:8080";
+const USER_ID = 1;
+
+async function searchMovies() {
+    const query = document.getElementById("searchInput").value;
+
+    const response = await fetch(
+        `http://localhost:8080/movies/search?query=${query}`
+    );
+
+    const data = await response.json();
+
+    console.log(data);
+
+    const movies = data.results; // ✅ IMPORTANT
+
+    const resultsDiv = document.getElementById("results");
+    resultsDiv.innerHTML = "";
+
+    movies.forEach(movie => {
+        const movieDiv = document.createElement("div");
+        movieDiv.style.marginBottom = "20px";
+
+        movieDiv.innerHTML = `
+            <img src="${movie.poster}" width="100"><br>
+            <h3>${movie.title} (${movie.year})</h3>
+            <button onclick="addToWatchlist('${movie.title}', '${movie.year}', '${movie.poster}')">
+                Add to Watchlist
+            </button>
+        `;
+
+        resultsDiv.appendChild(movieDiv);
+    });
+}
+
+async function addToWatchlist(imdbID) {
+  await fetch(`${BASE_URL}/watchlist`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      user_id: USER_ID,
+      imdb_id: imdbID,
+      status: "WATCHLIST",
+      rating: 0
+    })
+  });
+
+  alert("Added to watchlist!");
+}
+
+async function getWatchlist() {
+  const res = await fetch(`${BASE_URL}/users/${USER_ID}/watchlist`);
+  const data = await res.json();
+
+  const watchlistDiv = document.getElementById("watchlist");
+  watchlistDiv.innerHTML = "";
+
+  data.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "movie";
+    div.innerHTML = `
+      <img src="${item.poster}" />
+      <h3>${item.title} (${item.year})</h3>
+      <p>Status: ${item.status}</p>
+      <p>Your Rating: ${item.user_rating}</p>
+    `;
+    watchlistDiv.appendChild(div);
+  });
+}
+</script>
+
+</body>
+</html>
