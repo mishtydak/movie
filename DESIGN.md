@@ -93,7 +93,3 @@ with an `error` field; the frontend displays alerts when operations fail.
 
 The app can be built into a single binary with `go build` and deployed to any host that
 can run Go. The SQLite file persists data and can be backed up or moved as needed.
-
----
-
-*Document prepared by the development AI assistant on February 22, 2026.*
