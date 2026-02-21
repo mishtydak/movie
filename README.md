@@ -157,14 +157,14 @@ API.  You can also use `curl`/`Invoke-RestMethod` to exercise the endpoints dire
 
 ## Design & implementation
 
-See `DESIGN.md` for a high‑level architecture discussion and rationale.
+See `DESIGN.md` for a high-level architecture discussion and rationale.
 
 ## Prompts used
 
 The development of this project involved iterating with an AI assistant.  Here are the
 primary user prompts given during the session (the AI's responses are omitted):
 
-1. “index.html:397 POST http://localhost:8080/watchlist 500 (Internal Server Error)… solve this error”
+1. “index.html:397 POST http://localhost:8080/watchlist 500 (Internal Server Error)... solve this error”
 2. “now whwn i click mark as watched it is showing failed”
 3. “and the rating and add more details from the movie”
 4. “remove the word bollywood from frontend make it cinema and adjust the styling of it”
@@ -180,9 +180,3 @@ the front-end UI.
 
 **Author:** interactive assistant with live edits in the VS Code workspace
 **Date:** February 22, 2026
-
-## Environment Variables
-
-- `OMDB_API_KEY` - Your OMDB API key
-- `PORT` - Port to run the server on (defaults to 8080)
-

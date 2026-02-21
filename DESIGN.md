@@ -44,7 +44,7 @@ request URLs accordingly.
 ### Frontend (`frontend/index.html`)
 
 - Single-file static page with embedded CSS styles and JavaScript.
-- Dark cinematic theme with film grain effect.
+- Dark cinematic theme with film grain overlay and stylized buttons.
 - Contains user registration/login UI, movie search form, and watchlist display.
 - Communicates with backend via `fetch` API; handles login state, caching, retries.
 

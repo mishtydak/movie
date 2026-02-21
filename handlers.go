@@ -31,6 +31,7 @@ func SearchMoviesHandler(c *gin.Context) {
 		"results": movies,
 	})
 }
+
 func GetMovieDetailsHandler(c *gin.Context) {
 	imdbID := c.Param("imdbID")
 
@@ -67,8 +68,8 @@ func GetMovieDetailsHandler(c *gin.Context) {
 		"movie":  movieFromAPI,
 	})
 }
-func CreateUserHandler(c *gin.Context) {
 
+func CreateUserHandler(c *gin.Context) {
 	var req CreateUserRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -82,21 +83,7 @@ func CreateUserHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"user_id": id,
-	})
-}
-func GetUserWatchlistHandler(c *gin.Context) {
-
-	userID, _ := strconv.Atoi(c.Param("id"))
-
-	list, err := GetUserWatchlist(userID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, list)
+	c.JSON(http.StatusOK, gin.H{"user_id": id})
 }
 
 func GetUserHandler(c *gin.Context) {
@@ -130,8 +117,8 @@ func FindUserByEmailHandler(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, user)
 }
-func AddToWatchlistHandler(c *gin.Context) {
 
+func AddToWatchlistHandler(c *gin.Context) {
 	var req struct {
 		UserID int    `json:"user_id"`
 		ImdbID string `json:"imdb_id"`
@@ -143,13 +130,11 @@ func AddToWatchlistHandler(c *gin.Context) {
 		return
 	}
 
-	// Check if movie is already in watchlist for this user
 	alreadyExists, err := IsMovieInWatchlist(req.UserID, req.ImdbID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error checking watchlist"})
 		return
 	}
-
 	if alreadyExists {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Movie is already in your watchlist"})
 		return
@@ -157,26 +142,22 @@ func AddToWatchlistHandler(c *gin.Context) {
 
 	err = AddMovieToWatchlist(req.UserID, req.ImdbID, req.Status)
 	if err != nil {
-		// If the movie isn't cached yet, fetch details and retry
 		if strings.Contains(err.Error(), "movie not cached") {
 			movie, fetchErr := GetMovieDetails(req.ImdbID)
 			if fetchErr != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch movie details"})
 				return
 			}
-			// save result and retry adding
 			saveErr := SaveMovieToDB(movie)
 			if saveErr != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to cache movie"})
 				return
 			}
-			// try again
 			err = AddMovieToWatchlist(req.UserID, req.ImdbID, req.Status)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return
 			}
-			// success
 			c.JSON(http.StatusOK, gin.H{"message": "Added to watchlist successfully"})
 			return
 		}
@@ -184,12 +165,20 @@ func AddToWatchlistHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Added to watchlist successfully",
-	})
+	c.JSON(http.StatusOK, gin.H{"message": "Added to watchlist successfully"})
 }
-func UpdateWatchlistHandler(c *gin.Context) {
 
+func GetUserWatchlistHandler(c *gin.Context) {
+	userID, _ := strconv.Atoi(c.Param("id"))
+	list, err := GetUserWatchlist(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, list)
+}
+
+func UpdateWatchlistHandler(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid watchlist item ID"})
@@ -207,7 +196,6 @@ func UpdateWatchlistHandler(c *gin.Context) {
 		return
 	}
 
-	// prefer the explicit user_rating field if provided
 	rating := body.Rating
 	if body.UserRating != 0 {
 		rating = body.UserRating
@@ -219,9 +207,7 @@ func UpdateWatchlistHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Updated successfully",
-	})
+	c.JSON(http.StatusOK, gin.H{"message": "Updated successfully"})
 }
 
 func DeleteWatchlistItemHandler(c *gin.Context) {
@@ -231,7 +217,6 @@ func DeleteWatchlistItemHandler(c *gin.Context) {
 		return
 	}
 
-	// Check if the watchlist item exists
 	var count int
 	err = DB.QueryRow(`SELECT COUNT(*) FROM watchlist WHERE id = ?`, id).Scan(&count)
 	if err != nil {
@@ -244,7 +229,6 @@ func DeleteWatchlistItemHandler(c *gin.Context) {
 		return
 	}
 
-	// Delete the watchlist item
 	result, err := DB.Exec(`DELETE FROM watchlist WHERE id = ?`, id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete watchlist item"})
@@ -257,15 +241,11 @@ func DeleteWatchlistItemHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Watchlist item deleted successfully",
-	})
+	c.JSON(http.StatusOK, gin.H{"message": "Watchlist item deleted successfully"})
 }
 
 func ClearUserWatchlistHandler(c *gin.Context) {
 	userID, _ := strconv.Atoi(c.Param("id"))
-
-	// Delete all watchlist items for the user
 	result, err := DB.Exec(`DELETE FROM watchlist WHERE user_id = ?`, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to clear watchlist"})
@@ -273,9 +253,5 @@ func ClearUserWatchlistHandler(c *gin.Context) {
 	}
 
 	rc, _ := result.RowsAffected()
-
-	c.JSON(http.StatusOK, gin.H{
-		"message":       "Watchlist cleared successfully",
-		"deleted_count": rc,
-	})
+	c.JSON(http.StatusOK, gin.H{"message": "Watchlist cleared successfully", "deleted_count": rc})
 }

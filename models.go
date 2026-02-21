@@ -1,7 +1,5 @@
 package main
 
-import "time"
-
 type OMDBMovie struct {
 	Title  string `json:"Title"`
 	Year   string `json:"Year"`
@@ -43,10 +41,7 @@ type CreateUserRequest struct {
 }
 
 type AddToWatchlistRequest struct {
-	ID         uint `gorm:"primaryKey"`
-	UserID     uint `gorm:"uniqueIndex:idx_user_movie"`
-	MovieID    uint `gorm:"uniqueIndex:idx_user_movie"`
-	Status     string
-	UserRating int
-	CreatedAt  time.Time // WATCHLIST or WATCHED
+	UserID int    `json:"user_id"`
+	ImdbID string `json:"imdb_id"`
+	Status string `json:"status"` // WATCHLIST or WATCHED
 }
