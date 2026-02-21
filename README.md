@@ -159,24 +159,4 @@ API.  You can also use `curl`/`Invoke-RestMethod` to exercise the endpoints dire
 
 See `DESIGN.md` for a high-level architecture discussion and rationale.
 
-## Prompts used
-
-The development of this project involved iterating with an AI assistant.  Here are the
-primary user prompts given during the session (the AI's responses are omitted):
-
-1. “index.html:397 POST http://localhost:8080/watchlist 500 (Internal Server Error)... solve this error”
-2. “now whwn i click mark as watched it is showing failed”
-3. “and the rating and add more details from the movie”
-4. “remove the word bollywood from frontend make it cinema and adjust the styling of it”
-5. “can you make the frontend dark cinematic theme”
-6. “can u add a button where i can remove movie from my watchlist?”
-7. “add user database”
-8. “Database schema for user data and cached movies README with API documentation and external API setup Document explaining your caching strategy update readme according to this neatly and A README.md file explaining the design and implementation A markdown design document (if separate from README) All prompts used (if any AI tools were used to generate the code) all these should be included”
-
-These prompts directed the iterative development of handlers, database functions, and
-the front-end UI.
-
----
-
-**Author:** interactive assistant with live edits in the VS Code workspace
 **Date:** February 22, 2026
