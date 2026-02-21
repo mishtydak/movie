@@ -34,9 +34,13 @@ func main() {
 	}
 	r.GET("/movies/:imdbID", GetMovieDetailsHandler)
 	r.POST("/users", CreateUserHandler)
+	r.GET("/users", FindUserByEmailHandler) // query by email
+	r.GET("/users/:id", GetUserHandler)
 	r.POST("/watchlist", AddToWatchlistHandler)
 	r.GET("/users/:id/watchlist", GetUserWatchlistHandler)
 	r.PUT("/watchlist/:id", UpdateWatchlistHandler)
+	r.DELETE("/watchlist/:id", DeleteWatchlistItemHandler)
+	r.DELETE("/users/:id/watchlist", ClearUserWatchlistHandler)
 	r.Run(":" + port)
 
 }

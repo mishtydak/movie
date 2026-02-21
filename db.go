@@ -72,7 +72,7 @@ func createTables() {
 		added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		FOREIGN KEY(user_id) REFERENCES users(id),
 		FOREIGN KEY(movie_id) REFERENCES movies(id)
-		UNIQUE(user_id, movie_id)
+		
 	);`
 
 	_, err := DB.Exec(createUsersTable)
@@ -177,6 +177,51 @@ func CreateUser(name, email string) (int64, error) {
 
 	return result.LastInsertId()
 }
+
+// user lookup helpers
+func GetUserByID(id int) (map[string]interface{}, error) {
+	row := DB.QueryRow(`
+		SELECT id, name, email, created_at
+		FROM users
+		WHERE id = ?
+	`, id)
+
+	var uid int
+	var name, email string
+	var created string
+	if err := row.Scan(&uid, &name, &email, &created); err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"id":         uid,
+		"name":       name,
+		"email":      email,
+		"created_at": created,
+	}, nil
+}
+
+func GetUserByEmail(email string) (map[string]interface{}, error) {
+	row := DB.QueryRow(`
+		SELECT id, name, email, created_at
+		FROM users
+		WHERE email = ?
+	`, email)
+
+	var uid int
+	var name string
+	var created string
+	if err := row.Scan(&uid, &name, &email, &created); err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"id":         uid,
+		"name":       name,
+		"email":      email,
+		"created_at": created,
+	}, nil
+}
 func AddMovieToWatchlist(userID int, imdbID string, status string) error {
 
 	// Get movie internal ID
@@ -187,6 +232,8 @@ func AddMovieToWatchlist(userID int, imdbID string, status string) error {
 	).Scan(&movieID)
 
 	if err != nil {
+		// If movie is not in DB, it means it hasn't been cached yet
+		// Return a specific error that the caller can handle
 		return fmt.Errorf("movie not cached yet, fetch details first")
 	}
 
@@ -200,7 +247,7 @@ func AddMovieToWatchlist(userID int, imdbID string, status string) error {
 func GetUserWatchlist(userID int) ([]map[string]interface{}, error) {
 
 	rows, err := DB.Query(`
-		SELECT w.id, m.title, m.year, m.poster, w.status, w.user_rating
+		SELECT w.id, m.title, m.year, m.poster, m.imdb_rating, m.genre, m.plot, w.status, w.user_rating
 		FROM watchlist w
 		JOIN movies m ON w.movie_id = m.id
 		WHERE w.user_id = ?
@@ -215,16 +262,22 @@ func GetUserWatchlist(userID int) ([]map[string]interface{}, error) {
 
 	for rows.Next() {
 		var id int
-		var title, year, poster, status string
+		var title, year, poster, status, imdbRating, genre, plot string
 		var rating sql.NullInt64
 
-		rows.Scan(&id, &title, &year, &poster, &status, &rating)
+		err := rows.Scan(&id, &title, &year, &poster, &imdbRating, &genre, &plot, &status, &rating)
+		if err != nil {
+			return nil, err
+		}
 
 		results = append(results, map[string]interface{}{
 			"watchlist_id": id,
 			"title":        title,
 			"year":         year,
 			"poster":       poster,
+			"imdb_rating":  imdbRating,
+			"genre":        genre,
+			"plot":         plot,
 			"status":       status,
 			"user_rating":  rating.Int64,
 		})
@@ -241,4 +294,31 @@ func UpdateWatchlist(watchlistID int, status string, rating int) error {
 	`, status, rating, watchlistID)
 
 	return err
+}
+
+func IsMovieInWatchlist(userID int, imdbID string) (bool, error) {
+	// First get the movie ID from the movies table
+	var movieID int
+	err := DB.QueryRow(`SELECT id FROM movies WHERE imdb_id = ?`, imdbID).Scan(&movieID)
+	if err != nil {
+		// If movie doesn't exist in our DB yet, return false
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
+		return false, err
+	}
+
+	// Check if this movie is already in the user's watchlist
+	var count int
+	err = DB.QueryRow(`
+		SELECT COUNT(*) 
+		FROM watchlist 
+		WHERE user_id = ? AND movie_id = ?
+	`, userID, movieID).Scan(&count)
+
+	if err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
 }
